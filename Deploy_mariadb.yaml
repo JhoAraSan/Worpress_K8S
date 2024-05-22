@@ -1,0 +1,73 @@
+apiVersion: v1
+kind: Service
+
+metadata:
+  name: svc-mariadb
+  labels:
+    app: app-page-data
+
+spec:
+  type: ClusterIP # Only for internt access
+  selector:
+    proyect: Wordpress_page_data
+  ports:
+    - protocol: TCP
+      port: 3306
+      targetPort: 3306
+---
+
+apiVersion: apps/v1
+kind: Deployment
+
+metadata:
+  name: deploy-mariadb
+  labels:
+    app: app-page-data
+
+spec:
+  selector:
+    matchLabels:
+      proyect: Wordpress_page_data
+  replicas: 1
+
+  template:
+    metadata:
+      name: mariadb
+      labels:
+        proyect: Wordpress_page_data
+    spec:
+      containers:
+        - name: mariadb
+          image: jarangos89/image_mariadb:latest
+          env:
+            - name: MARIADB_USER
+              value: usuario_maria
+            - name: MARIADB_PASSWORD
+              value: qwe098
+            - name: MARIADB_DATABASE
+              value: datos_db
+            - name: MARIADB_ROOT_PASSWORD
+              value: qwer0987
+          ports:
+            - containerPort: 3306
+          volumeMounts:
+            - name: persistent-storage-mariadb
+              mountPath: /var/lib/mysql
+      volumes:
+        - name: persistent-storage-mariadb
+          persistentVolumeClaim:
+            claimName: pvc-mariadb
+---
+
+apiVersion: v1
+kind: PersistentVolumeClaim
+
+metadata:
+  name: pvc-mariadb
+
+spec:
+  accessModes:
+    - ReadWriteMany
+  resources:
+    requests:
+      storage: 300M
